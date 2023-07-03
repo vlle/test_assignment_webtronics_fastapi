@@ -13,9 +13,11 @@ class Base(DeclarativeBase):
 class Robot(Base):
     __tablename__ = "robot"
     id: Mapped[int] = mapped_column(primary_key=True)
-    jwt: Mapped[str] = mapped_column(String(128))
     name: Mapped[str] = mapped_column(String(50))
+    login: Mapped[str] = mapped_column(String(32))
+    password: Mapped[str] = mapped_column(String(32))
     email: Mapped[str] = mapped_column(String(50))
+    videos: Mapped[List["Video"]] = relationship("Video", backref="robot")
 
 
 class Video(Base):
@@ -25,3 +27,4 @@ class Video(Base):
     name: Mapped[str] = mapped_column(String(128))
     description: Mapped[str] = mapped_column(String(512))
     author: Mapped[int] = mapped_column(ForeignKey("robot.id"))
+    uploaded_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
