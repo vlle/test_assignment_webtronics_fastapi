@@ -1,19 +1,15 @@
-from contextlib import asynccontextmanager
-
 from crud import register_user
 from database import engine, init_models, maker
 from fastapi import Depends, FastAPI, status
 from pydantic_models import RobotUser
 from sqlalchemy.ext.asyncio import AsyncSession
 
+application = FastAPI()
 
-@asynccontextmanager
-async def lifespan(_: FastAPI):
+
+@application.on_event("startup")
+async def init_db() -> None:
     await init_models(engine)
-    yield
-
-
-application = FastAPI(lifespan=lifespan)
 
 
 async def db_connection():

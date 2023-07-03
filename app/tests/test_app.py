@@ -1,25 +1,22 @@
 import pytest
 from crud import get_all_users
-from fastapi.testclient import TestClient
+from database import DATABASE_URL, MissingEnvironmentVariable
+from httpx import AsyncClient
 from main import application
 from models import Base
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
 
-TEST_DB_URL = "sqlite+aiosqlite://"
+if not DATABASE_URL:
+    raise MissingEnvironmentVariable("DATABASE_URL")
 
-engine = create_async_engine(TEST_DB_URL, echo=False)
+engine = create_async_engine(DATABASE_URL, echo=False)
 maker = async_sessionmaker(engine, expire_on_commit=False)
 
-client = TestClient(application)
 
-
-async def drop_tables(engine: AsyncEngine):
+@pytest.fixture
+async def table_creation():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
-
-
-async def create_tables(engine: AsyncEngine):
-    async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
 
@@ -39,14 +36,16 @@ async def get_session():
 
 
 @pytest.mark.asyncio
-async def test_signup_robot(get_session):
-    await drop_tables(engine)
-    await create_tables(engine)
+async def test_signup_robot(table_creation, get_session):
+    await table_creation
     session = await get_session
-    response = client.post(
-        url="/signup",
-        json={"login": "test", "password": "test", "email": "test@yahoo.com"},
-    )
+    assert "test" not in (await get_all_users(session))
+    async with AsyncClient(app=application, base_url="http://127.0.0.1") as ac:
+        response = await ac.post(
+            url="/signup",
+            json={"login": "test", "password": "test", "email": "test@yahoo.com"},
+        )
     assert response.status_code == 201
     assert response.json()["status"] == "success"
     assert "test" in (await get_all_users(session))
+    await session.close()
