@@ -1,9 +1,8 @@
 import os
 
 from dotenv import load_dotenv
+from models import Base
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
-
-from app.models import Base
 
 
 class MissingEnvironmentVariable(Exception):

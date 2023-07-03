@@ -1,14 +1,34 @@
-# robot youtube
+from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from crud import register_user
+from database import engine, init_models, maker
+from fastapi import Depends, FastAPI, status
+from pydantic_models import RobotUser
+from sqlalchemy.ext.asyncio import AsyncSession
 
-application = FastAPI()
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    await init_models(engine)
+    yield
+
+
+application = FastAPI(lifespan=lifespan)
+
+
+async def db_connection():
+    db = maker()
+    try:
+        yield db
+    finally:
+        await db.close()
 
 
 # def signup
-@application.get("/signup")
-async def signup():
-    return {"signup": "signup"}
+@application.post("/signup", status_code=status.HTTP_201_CREATED, responses={})
+async def signup(user: RobotUser, db: AsyncSession = Depends(db_connection)):
+    await register_user(db, user)
+    return {"status": "success"}
 
 
 # def login
