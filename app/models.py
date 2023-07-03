@@ -1,0 +1,27 @@
+from datetime import datetime
+from typing import List
+
+from sqlalchemy import DateTime, String
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm.properties import ForeignKey
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+class Robot(Base):
+    __tablename__ = "robot"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    jwt: Mapped[str] = mapped_column(String(128))
+    name: Mapped[str] = mapped_column(String(50))
+    email: Mapped[str] = mapped_column(String(50))
+
+
+class Video(Base):
+    __tablename__ = "video"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(128))
+    description: Mapped[str] = mapped_column(String(512))
+    author: Mapped[int] = mapped_column(ForeignKey("robot.id"))

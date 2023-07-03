@@ -1,57 +1,54 @@
-# robot dating application (tinder)
-
-from typing import Union
+# robot youtube
 
 from fastapi import FastAPI
-from pydantic import BaseModel
 
-app = FastAPI()
+application = FastAPI()
 
 
 # def signup
-@app.get("/signup")
+@application.get("/signup")
 async def signup():
     return {"signup": "signup"}
 
 
 # def login
-@app.get("/login")
+@application.get("/login")
 async def login():
     return {"login": "login"}
 
 
 # def create_post
-@app.post("/create_post")
+@application.post("/create_post")
 async def create_post():
     return {"create_post": "create_post"}
 
 
 # def edit_post
-@app.put("/edit_post")
+@application.put("/edit_post")
 async def edit_post():
     return {"edit_post": "edit_post"}
 
 
 # def delete_post
-@app.delete("/delete_post")
+@application.delete("/delete_post")
 async def delete_post():
     return {"delete_post": "delete_post"}
 
 
 # def view_post
-@app.get("/view_post")
+@application.get("/view_post")
 async def view_post():
     return {"view_post": "view_post"}
 
 
 # def like_post
-@app.put("/like_post")
+@application.put("/like_post")
 async def like_post():
     return {"like_post": "like_post"}
 
 
 # def dislike_post
-@app.put("/dislike_post")
+@application.put("/dislike_post")
 async def dislike_post():
     return {"dislike_post": "dislike_post"}
 
