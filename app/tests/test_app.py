@@ -4,7 +4,7 @@ from database import DATABASE_URL, MissingEnvironmentVariable
 from httpx import AsyncClient
 from main import application
 from models import Base
-from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 if not DATABASE_URL:
     raise MissingEnvironmentVariable("DATABASE_URL")
@@ -20,7 +20,8 @@ async def table_creation():
         await conn.run_sync(Base.metadata.create_all)
 
 
-async def override_get_db():
+@pytest.fixture
+async def get_session():
     db = maker()
     try:
         yield db
@@ -28,17 +29,10 @@ async def override_get_db():
         await db.close()
 
 
-@pytest.fixture
-async def get_session():
-    obj = override_get_db()
-    session = await anext(obj)
-    return session
-
-
 @pytest.mark.asyncio
 async def test_signup_robot(table_creation, get_session):
     await table_creation
-    session = await get_session
+    session = await anext(get_session)
     assert "test" not in (await get_all_users(session))
     async with AsyncClient(app=application, base_url="http://127.0.0.1") as ac:
         response = await ac.post(
@@ -49,3 +43,64 @@ async def test_signup_robot(table_creation, get_session):
     assert response.json()["status"] == "success"
     assert "test" in (await get_all_users(session))
     await session.close()
+
+
+@pytest.mark.asyncio
+async def test_signup_robot_already_registered(table_creation, get_session):
+    await table_creation
+    session = await anext(get_session)
+    assert "test" not in (await get_all_users(session))
+    async with AsyncClient(app=application, base_url="http://127.0.0.1") as ac:
+        response = await ac.post(
+            url="/signup",
+            json={"login": "test", "password": "test", "email": "test@yahoo.com"},
+        )
+    assert response.status_code == 201
+    assert response.json()["status"] == "success"
+    assert "test" in (await get_all_users(session))
+    async with AsyncClient(app=application, base_url="http://127.0.0.1") as ac:
+        response = await ac.post(
+            url="/signup",
+            json={"login": "test", "password": "test", "email": "test@yahoo.com"},
+        )
+    assert response.status_code == 400
+    await session.close()
+
+
+@pytest.mark.asyncio
+async def test_signup_robot_already_registered_2(table_creation, get_session):
+    await table_creation
+    session = await anext(get_session)
+    assert "test" not in (await get_all_users(session))
+    async with AsyncClient(app=application, base_url="http://127.0.0.1") as ac:
+        response = await ac.post(
+            url="/signup",
+            json={"login": "test", "password": "test", "email": "test@yahoo.com"},
+        )
+    assert response.status_code == 201
+    assert response.json()["status"] == "success"
+    assert "test" in (await get_all_users(session))
+    async with AsyncClient(app=application, base_url="http://127.0.0.1") as ac:
+        response = await ac.post(
+            url="/signup",
+            json={"login": "test", "password": "test", "email": "test@yahoo.com"},
+        )
+    assert response.status_code == 400
+    await session.close()
+
+
+@pytest.mark.asyncio
+async def test_login_robot(table_creation):
+    await table_creation
+    async with AsyncClient(app=application, base_url="http://127.0.0.1") as ac:
+        response_register = await ac.post(
+            url="/signup",
+            json={"login": "test", "password": "test", "email": "test@yahoo.com"},
+        )
+        response_login = await ac.get(
+            url="/login",
+            params={"login": "test", "password": "test"},
+        )
+    assert response_register.status_code == 201
+    assert response_login.status_code == 200
+    assert response_login.json()["status"] == "success"

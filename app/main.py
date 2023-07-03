@@ -1,7 +1,8 @@
-from crud import register_user
+from crud import login_user, register_user
 from database import engine, init_models, maker
-from fastapi import Depends, FastAPI, status
-from pydantic_models import RobotUser
+from fastapi import Depends, FastAPI, HTTPException, status
+from pydantic_models import RobotLoginForm, RobotUser
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 application = FastAPI()
@@ -21,16 +22,43 @@ async def db_connection():
 
 
 # def signup
-@application.post("/signup", status_code=status.HTTP_201_CREATED, responses={})
+@application.post(
+    "/signup",
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_400_BAD_REQUEST: {"description": "User already exists"},
+        status.HTTP_201_CREATED: {"description": "User created"},
+    },
+)
 async def signup(user: RobotUser, db: AsyncSession = Depends(db_connection)):
-    await register_user(db, user)
+    try:
+        await register_user(db, user)
+    except IntegrityError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="User already exists"
+        )
     return {"status": "success"}
 
 
 # def login
-@application.get("/login")
-async def login():
-    return {"login": "login"}
+@application.get(
+    "/login",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {"description": "Wrong login or password"},
+        status.HTTP_200_OK: {"description": "User logged in"},
+    },
+)
+async def login(login: str, password: str, db: AsyncSession = Depends(db_connection)):
+    print(1)
+    user = RobotLoginForm(login=login, password=password)
+    is_there_user = await login_user(db, user)
+    if is_there_user:
+        return {"status": "success"}
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong login or password"
+        )
 
 
 # def create_post
