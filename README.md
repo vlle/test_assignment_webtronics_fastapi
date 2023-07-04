@@ -9,10 +9,10 @@ This is a simple CRUD-like web API based on FastAPI, SQLALchemy and PostgreSQL.
 - Availability to set like and dislike
 - JWT-based authentication
 - Swagger documentation available at https://127.0.0.1/docs (after running the app)
-<img width="600" alt="pydocs" src="https://github.com/vlle/technical_assignemnt_webtronic_fastapi/assets/91570054/62434380-b3d2-4118-9af0-570c48b345cd">
+![Documentation](img/pydocs.png) 
 
 - Pytest tests.
-- <img width="600" alt="Снимок экрана 2023-07-04 в 15 38 21" src="https://github.com/vlle/technical_assignemnt_webtronic_fastapi/assets/91570054/8841dd2e-670b-40d2-82c4-c50bc9781c43">
+![Tests](img/tests.png) 
 - Redis for caching
 - Attempt at creating Github Workflow for auto-testing (starts, but not finishing)
 
