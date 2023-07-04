@@ -2,6 +2,7 @@ from authentication import KEY, authenticate_user, get_password_hash, has_access
 from crud import (
     create_video,
     delete_video,
+    dislike_video,
     get_video,
     like_video,
     register_user,
@@ -136,8 +137,24 @@ async def like_post(
 
 
 @application.post("/dislike_post")
-async def dislike_post():
-    return {"dislike_post": "dislike_post"}
+async def dislike_post(
+    video_id: int,
+    payload: dict = Depends(has_access),
+    db: AsyncSession = Depends(db_connection),
+):
+    user_id = payload["user_id"]
+    video = await get_video(db, video_id)
+    if not video:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Video not found"
+        )
+    if video.author == user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You can't like your own video",
+        )
+    operation_status = await dislike_video(db, video_id, user_id)
+    return {"status": "success" if operation_status is True else "failed"}
 
 
 @application.get("/get_likes")

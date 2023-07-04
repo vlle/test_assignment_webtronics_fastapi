@@ -271,6 +271,68 @@ async def test_like_video(table_creation):
 
 
 @pytest.mark.asyncio
+async def test_dislike_video(table_creation):
+    await table_creation
+    async with AsyncClient(app=application, base_url="http://127.0.0.1") as ac:
+        await ac.post(
+            url="/signup",
+            json={"login": "test", "password": "test", "email": "test@yahoo.com"},
+        )
+        login = await ac.get(
+            url="/login",
+            params={"login": "test", "password": "test"},
+        )
+        token = login.json()["token"]
+        response_create_video = await ac.post(
+            url="/create_post",
+            json={"name": "test", "description": "test"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        video_id = response_create_video.json()["video_id"]
+
+        await ac.post(
+            url="/signup",
+            json={
+                "login": "another_test",
+                "password": "test",
+                "email": "test2@yahoo.com",
+            },
+        )
+        login = await ac.get(
+            url="/login",
+            params={"login": "another_test", "password": "test"},
+        )
+        token = login.json()["token"]
+        response_like_video = await ac.post(
+            url="/like_post",
+            params={"video_id": video_id},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response_like_video.status_code == 200
+        assert response_like_video.json()["status"] == "success"
+        response_check_likes = await ac.get(
+            url="/get_likes",
+            params={"video_id": video_id},
+        )
+        assert response_check_likes.status_code == 200
+        assert len(response_check_likes.json()["likes"]) == 1
+
+        response_like_video = await ac.post(
+            url="/dislike_post",
+            params={"video_id": video_id},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response_like_video.status_code == 200
+        assert response_like_video.json()["status"] == "success"
+        response_check_likes = await ac.get(
+            url="/get_likes",
+            params={"video_id": video_id},
+        )
+        assert response_check_likes.status_code == 200
+        assert len(response_check_likes.json()["likes"]) == 0
+
+
+@pytest.mark.asyncio
 async def test_is_author_can_like_own_video(table_creation):
     await table_creation
     async with AsyncClient(app=application, base_url="http://127.0.0.1") as ac:
