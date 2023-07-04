@@ -13,8 +13,9 @@ This is a simple CRUD-like web API based on FastAPI, SQLALchemy and PostgreSQL.
 
 - Pytest tests.
 - <img width="600" alt="Снимок экрана 2023-07-04 в 15 38 21" src="https://github.com/vlle/technical_assignemnt_webtronic_fastapi/assets/91570054/8841dd2e-670b-40d2-82c4-c50bc9781c43">
-
 - Redis for caching
+- Attempt at creating Github Workflow for auto-testing (starts, but not finishing)
+
 
 ## What would I do with more time:
 1) Mock more in testing - my code heavily dependents on database, so I would mock it more. And testing some of endpoints dependents on another endpoints, so I would mock it more.
