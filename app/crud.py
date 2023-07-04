@@ -3,6 +3,7 @@ from pydantic_models import RobotLoginForm, RobotUser
 from pydantic_models import Video as VideoPydantic
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 
 async def register_user(session: AsyncSession, robot_user: RobotUser):
@@ -38,7 +39,7 @@ async def create_video(
 
 
 async def get_video(session: AsyncSession, video_id: int) -> Video | None:
-    stmt = select(Video).where(Video.id == video_id)
+    stmt = select(Video).options(selectinload(Video.likes)).where(Video.id == video_id)
     async with session, session.begin():
         result = await session.scalars(stmt)
         return result.one_or_none()
@@ -54,6 +55,36 @@ async def update_video(
         if video:
             video.name = video_inc.name
             video.description = video_inc.description
+            session.add(video)
+            await session.commit()
+            return True
+        return False
+
+
+async def like_video(session: AsyncSession, video_id: int, author_id: int) -> int:
+    stmt = (
+        select(Video)
+        .options(selectinload(Video.likes))
+        .where(and_(Video.id == video_id))
+    )
+    async with session, session.begin():
+        result = await session.scalars(stmt)
+        video = result.one_or_none()
+        if video:
+            video.likes.append(await session.get(Robot, author_id))
+            session.add(video)
+            await session.commit()
+            return True
+        return False
+
+
+async def dislike_video(session: AsyncSession, video_id: int, author_id: int) -> int:
+    stmt = select(Video).where(and_(Video.id == video_id, Video.author == author_id))
+    async with session, session.begin():
+        result = await session.scalars(stmt)
+        video = result.one_or_none()
+        if video:
+            video.likes.remove(await session.get(Robot, author_id))
             session.add(video)
             await session.commit()
             return True

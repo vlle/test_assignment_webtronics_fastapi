@@ -1,5 +1,12 @@
 from authentication import KEY, authenticate_user, get_password_hash, has_access
-from crud import create_video, delete_video, get_video, register_user, update_video
+from crud import (
+    create_video,
+    delete_video,
+    get_video,
+    like_video,
+    register_user,
+    update_video,
+)
 from database import engine, init_models, maker
 from fastapi import Depends, FastAPI, HTTPException, status
 from jose import jwt
@@ -23,7 +30,6 @@ async def db_connection():
         await db.close()
 
 
-# def signup
 @application.post(
     "/signup",
     status_code=status.HTTP_201_CREATED,
@@ -43,7 +49,6 @@ async def signup(user: RobotUser, db: AsyncSession = Depends(db_connection)):
     return {"status": "success"}
 
 
-# def login
 @application.get(
     "/login",
     status_code=status.HTTP_200_OK,
@@ -65,7 +70,6 @@ async def login(login: str, password: str, db: AsyncSession = Depends(db_connect
     return {"token": encoded}
 
 
-# def create_post
 @application.post("/create_post", status_code=status.HTTP_201_CREATED)
 async def create_post(
     video: Video,
@@ -77,7 +81,6 @@ async def create_post(
     return {"status": "success", "video_id": video_id}
 
 
-# def edit_post
 @application.put("/edit_post", status_code=status.HTTP_200_OK)
 async def edit_post(
     video_id: int,
@@ -90,7 +93,6 @@ async def edit_post(
     return {"status": "success" if status is True else "failed"}
 
 
-# def delete_post
 @application.delete("/delete_post", status_code=status.HTTP_200_OK)
 async def delete_post(
     video_id: int,
@@ -102,7 +104,6 @@ async def delete_post(
     return {"status": "success" if status is True else "failed"}
 
 
-# def view_post
 @application.get("/view_post")
 async def view_post(video_id: int, db: AsyncSession = Depends(db_connection)):
     video = await get_video(db, video_id)
@@ -113,23 +114,38 @@ async def view_post(video_id: int, db: AsyncSession = Depends(db_connection)):
     return {"video": Video(name=video.name, description=video.description)}
 
 
-# def like_post
-@application.put("/like_post")
-async def like_post():
-    return {"like_post": "like_post"}
+@application.post("/like_post")
+async def like_post(
+    video_id: int,
+    payload: dict = Depends(has_access),
+    db: AsyncSession = Depends(db_connection),
+):
+    user_id = payload["user_id"]
+    video = await get_video(db, video_id)
+    if not video:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Video not found"
+        )
+    if video.author == user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You can't like your own video",
+        )
+    operation_status = await like_video(db, video_id, user_id)
+    return {"status": "success" if operation_status is True else "failed"}
 
 
-# def dislike_post
-@application.put("/dislike_post")
+@application.post("/dislike_post")
 async def dislike_post():
     return {"dislike_post": "dislike_post"}
 
 
-# Description
-# 	Create a simple RESTful API using FastAPI for a social networking application
-# Functional requirements:
-# There should be some form of authentication and registration (JWT, Oauth, Oauth 2.0, etc..)
-# As a user I need to be able to signup and login
-# As a user I need to be able to create, edit, delete and view posts
-# As a user I can like or dislike other users’ posts but not my own
-# The API needs a UI Documentation (Swagger/ReDoc)
+@application.get("/get_likes")
+async def get_likes(video_id: int, db: AsyncSession = Depends(db_connection)):
+    video = await get_video(db, video_id)
+    if not video:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Video not found"
+        )
+    likes = video.likes
+    return {"likes": likes}

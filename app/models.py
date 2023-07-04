@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List
 
-from sqlalchemy import Column, DateTime, String, Table
+from sqlalchemy import Column, DateTime, PrimaryKeyConstraint, String, Table
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
 from sqlalchemy.orm.properties import ForeignKey
 
@@ -13,6 +13,7 @@ likes_table = Table(
     Base.metadata,
     Column("liked_video", ForeignKey("video.id")),
     Column("like_owner", ForeignKey("robot.id")),
+    PrimaryKeyConstraint("liked_video", "like_owner"),
 )
 
 
