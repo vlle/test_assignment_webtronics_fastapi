@@ -45,15 +45,16 @@ async def get_video(session: AsyncSession, video_id: int) -> Video | None:
 
 
 async def update_video(
-    session: AsyncSession, video: VideoPydantic, video_id: int, author_id: int
+    session: AsyncSession, video_inc: VideoPydantic, video_id: int, author_id: int
 ) -> int:
     stmt = select(Video).where(and_(Video.id == video_id, Video.author == author_id))
     async with session, session.begin():
         result = await session.scalars(stmt)
         video = result.one_or_none()
         if video:
-            video.name = video.name
-            video.description = video.description
+            video.name = video_inc.name
+            video.description = video_inc.description
+            session.add(video)
             await session.commit()
             return True
         return False

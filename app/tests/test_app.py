@@ -155,4 +155,19 @@ async def test_edit_video(table_creation):
             headers={"Authorization": f"Bearer {token}"},
         )
         video_id = response_create_video.json()["video_id"]
-        video = Video.description = "test2"
+        response_edit_video = await ac.put(
+            url="/edit_post",
+            params={"video_id": video_id},
+            json={"name": "test2", "description": "description"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        print(response_edit_video.json())
+        assert response_edit_video.status_code == 200
+        assert response_edit_video.json()["status"] == "success"
+
+        response_get_video = await ac.get(
+            url="/view_post",
+            params={"video_id": video_id},
+        )
+        assert response_get_video.status_code == 200
+        assert response_get_video.json()["video"]["name"] == "test2"
