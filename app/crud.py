@@ -27,11 +27,36 @@ async def login_user(session: AsyncSession, robot_user: RobotLoginForm) -> Robot
         return result.one_or_none()
 
 
-async def create_video(session: AsyncSession, video: VideoPydantic, user_id: int):
+async def create_video(
+    session: AsyncSession, video: VideoPydantic, user_id: int
+) -> int:
     video = Video(**video.dict())
     video.author = user_id
     session.add(video)
     await session.commit()
+    return video.id
+
+
+async def get_video(session: AsyncSession, video_id: int) -> Video | None:
+    stmt = select(Video).where(Video.id == video_id)
+    async with session, session.begin():
+        result = await session.scalars(stmt)
+        return result.one_or_none()
+
+
+async def update_video(
+    session: AsyncSession, video: VideoPydantic, video_id: int, author_id: int
+) -> int:
+    stmt = select(Video).where(and_(Video.id == video_id, Video.author == author_id))
+    async with session, session.begin():
+        result = await session.scalars(stmt)
+        video = result.one_or_none()
+        if video:
+            video.name = video.name
+            video.description = video.description
+            await session.commit()
+            return True
+        return False
 
 
 async def get_all_users(session: AsyncSession):

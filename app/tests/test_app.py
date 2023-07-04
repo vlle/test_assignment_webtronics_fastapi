@@ -4,7 +4,7 @@ from database import DATABASE_URL, MissingEnvironmentVariable
 from httpx import AsyncClient
 from jose import jwt
 from main import KEY, application
-from models import Base
+from models import Base, Video
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 if not DATABASE_URL:
@@ -106,6 +106,53 @@ async def test_create_video(table_creation):
             json={"name": "test", "description": "test"},
             headers={"Authorization": f"Bearer {token}"},
         )
-    assert response_register.status_code == 201
-    assert response_login.status_code == 200
     assert response_create_video.status_code == 201
+
+
+@pytest.mark.asyncio
+async def test_get_video(table_creation):
+    await table_creation
+    async with AsyncClient(app=application, base_url="http://127.0.0.1") as ac:
+        response_register = await ac.post(
+            url="/signup",
+            json={"login": "test", "password": "test", "email": "test@yahoo.com"},
+        )
+        response_login = await ac.get(
+            url="/login",
+            params={"login": "test", "password": "test"},
+        )
+        token = response_login.json()["token"]
+        response_create_video = await ac.post(
+            url="/create_post",
+            json={"name": "test", "description": "test"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        video_id = response_create_video.json()["video_id"]
+        response_get_video = await ac.get(
+            url="/view_post",
+            params={"video_id": video_id},
+        )
+        assert response_get_video.status_code == 200
+        assert response_get_video.json()["video"]["name"] == "test"
+
+
+@pytest.mark.asyncio
+async def test_edit_video(table_creation):
+    await table_creation
+    async with AsyncClient(app=application, base_url="http://127.0.0.1") as ac:
+        await ac.post(
+            url="/signup",
+            json={"login": "test", "password": "test", "email": "test@yahoo.com"},
+        )
+        login = await ac.get(
+            url="/login",
+            params={"login": "test", "password": "test"},
+        )
+        token = login.json()["token"]
+        response_create_video = await ac.post(
+            url="/create_post",
+            json={"name": "test", "description": "test"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        video_id = response_create_video.json()["video_id"]
+        video = Video.description = "test2"

@@ -1,6 +1,13 @@
 import logging
 
-from crud import create_video, get_user_by_login, login_user, register_user
+from crud import (
+    create_video,
+    get_user_by_login,
+    get_video,
+    login_user,
+    register_user,
+    update_video,
+)
 from database import engine, init_models, maker
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -61,15 +68,10 @@ async def has_access(credentials: HTTPAuthorizationCredentials = Depends(securit
         payload = jwt.decode(
             token,
             key=KEY,
-            options={
-                "verify_signature": False,
-                "verify_aud": False,
-                "verify_iss": False,
-            },
         )
-        return payload
     except JWTError as e:  # catches any exception
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+    return payload
 
 
 # def signup
@@ -83,7 +85,6 @@ async def has_access(credentials: HTTPAuthorizationCredentials = Depends(securit
 )
 async def signup(user: RobotUser, db: AsyncSession = Depends(db_connection)):
     user.password = get_password_hash(user.password)
-    print(user.password)
     try:
         await register_user(db, user)
     except IntegrityError:
@@ -122,17 +123,22 @@ async def create_post(
     payload: dict = Depends(has_access),
     db: AsyncSession = Depends(db_connection),
 ):
-    print(payload)
-    logging.warn(payload)
     user_id = payload["user_id"]
-    await create_video(db, video, user_id)
-    return {"status": "success"}
+    video_id = await create_video(db, video, user_id)
+    return {"status": "success", "video_id": video_id}
 
 
 # def edit_post
-@application.put("/edit_post")
-async def edit_post():
-    return {"edit_post": "edit_post"}
+@application.put("/edit_post", status_code=status.HTTP_200_OK)
+async def edit_post(
+    video_id: int,
+    video: Video,
+    payload: dict = Depends(has_access),
+    db: AsyncSession = Depends(db_connection),
+):
+    user_id = payload["user_id"]
+    status = await update_video(db, video, video_id, user_id)
+    return {"status": "success" if status is True else "failed"}
 
 
 # def delete_post
@@ -143,8 +149,13 @@ async def delete_post():
 
 # def view_post
 @application.get("/view_post")
-async def view_post():
-    return {"view_post": "view_post"}
+async def view_post(video_id: int, db: AsyncSession = Depends(db_connection)):
+    video = await get_video(db, video_id)
+    if not video:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Video not found"
+        )
+    return {"video": Video(name=video.name, description=video.description)}
 
 
 # def like_post

@@ -1,11 +1,19 @@
 from datetime import datetime
 from typing import List
 
-from sqlalchemy import DateTime, String
+from sqlalchemy import Column, DateTime, String, Table
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
 from sqlalchemy.orm.properties import ForeignKey
 
 Base = declarative_base()
+
+
+likes_table = Table(
+    "association_table",
+    Base.metadata,
+    Column("liked_video", ForeignKey("video.id")),
+    Column("like_owner", ForeignKey("robot.id")),
+)
 
 
 class Robot(Base):
@@ -16,6 +24,9 @@ class Robot(Base):
     password: Mapped[str] = mapped_column(String(128))
     email: Mapped[str] = mapped_column(String(50), unique=True)
     videos: Mapped[List["Video"]] = relationship("Video", backref="robot")
+    liked_videos: Mapped[List["Video"]] = relationship(
+        secondary=likes_table, back_populates="likes"
+    )
 
 
 class Video(Base):
@@ -25,4 +36,7 @@ class Video(Base):
     name: Mapped[str] = mapped_column(String(128))
     description: Mapped[str] = mapped_column(String(512))
     author: Mapped[int] = mapped_column(ForeignKey("robot.id"))
+    likes: Mapped[List["Robot"]] = relationship(
+        "Robot", secondary=likes_table, back_populates="liked_videos"
+    )
     uploaded_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
