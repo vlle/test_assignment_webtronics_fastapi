@@ -1,11 +1,11 @@
-import secrets
-
-import jwt
-from crud import login_user, register_user
+from crud import create_video, get_user_by_login, login_user, register_user
 from database import engine, init_models, maker
 from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
 from models import Robot
-from pydantic_models import RobotLoginForm, RobotUser
+from passlib.context import CryptContext
+from pydantic_models import RobotLoginForm, RobotUser, Video
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,7 +26,49 @@ async def db_connection():
 
 
 # random 128 letter key for jwt key
-KEY = secrets.token_hex(128)
+KEY = "c537dc83a4d4b8b0d8138122b53a86f341f6bb60e23174d940aa7e7d3dfecbda"
+security = HTTPBearer()
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
+
+async def authenticate_user(db: AsyncSession, user: RobotLoginForm) -> Robot | None:
+    db_user = await get_user_by_login(db, user.login)
+    if not db_user:
+        return None
+    is_password_correct = verify_password(user.password, db_user.password)
+    if not is_password_correct:
+        return None
+    return db_user
+
+
+async def has_access(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    Function that is used to validate the token in the case that it requires it
+    """
+    token = credentials.credentials
+
+    try:
+        payload = jwt.decode(
+            token,
+            key=KEY,
+            options={
+                "verify_signature": False,
+                "verify_aud": False,
+                "verify_iss": False,
+            },
+        )
+        return payload
+    except JWTError as e:  # catches any exception
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+
 
 # def signup
 @application.post(
@@ -38,6 +80,8 @@ KEY = secrets.token_hex(128)
     },
 )
 async def signup(user: RobotUser, db: AsyncSession = Depends(db_connection)):
+    user.password = get_password_hash(user.password)
+    print(user.password)
     try:
         await register_user(db, user)
     except IntegrityError:
@@ -58,21 +102,27 @@ async def signup(user: RobotUser, db: AsyncSession = Depends(db_connection)):
 )
 async def login(login: str, password: str, db: AsyncSession = Depends(db_connection)):
     user = RobotLoginForm(login=login, password=password)
-    is_there_user: Robot = await login_user(db, user)
-    if is_there_user:
-        payload = {"user_id": is_there_user.id, "login": user.login}
-        encoded = jwt.encode(payload=payload, key=KEY)
-        return {"token": encoded}
-    else:
+    authorized_user = await authenticate_user(db, user)
+    if not authorized_user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong login or password"
         )
 
+    payload = {"user_id": authorized_user.id, "login": authorized_user.login}
+    encoded = jwt.encode(payload, key=KEY)
+    return {"token": encoded}
+
 
 # def create_post
-@application.post("/create_post")
-async def create_post():
-    return {"create_post": "create_post"}
+@application.post("/create_post", status_code=status.HTTP_201_CREATED)
+async def create_post(
+    video: Video,
+    db: AsyncSession = Depends(db_connection),
+    payload: dict = Depends(has_access),
+):
+    user_id = payload["user_id"]
+    await create_video(db, video, user_id)
+    return {"status": "success"}
 
 
 # def edit_post

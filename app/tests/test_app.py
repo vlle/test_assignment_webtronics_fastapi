@@ -1,8 +1,8 @@
-import jwt
 import pytest
 from crud import get_all_users
 from database import DATABASE_URL, MissingEnvironmentVariable
 from httpx import AsyncClient
+from jose import jwt
 from main import KEY, application
 from models import Base
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
@@ -71,6 +71,26 @@ async def test_signup_robot_already_registered(table_creation, get_session):
 @pytest.mark.asyncio
 async def test_login_robot(table_creation):
     await table_creation
+    password = login = "test"
+    async with AsyncClient(app=application, base_url="http://127.0.0.1") as ac:
+        response_register = await ac.post(
+            url="/signup",
+            json={"login": login, "password": password, "email": "test@yahoo.com"},
+        )
+        response_login = await ac.get(
+            url="/login",
+            params={"login": login, "password": password},
+        )
+    assert response_register.status_code == 201
+    assert response_login.status_code == 200
+    assert response_login.json()["token"] is not None
+    decoded = jwt.decode(response_login.json()["token"], KEY, algorithms=["HS256"])
+    assert decoded["login"] == "test"
+
+
+@pytest.mark.asyncio
+async def test_create_video(table_creation):
+    await table_creation
     async with AsyncClient(app=application, base_url="http://127.0.0.1") as ac:
         response_register = await ac.post(
             url="/signup",
@@ -80,8 +100,8 @@ async def test_login_robot(table_creation):
             url="/login",
             params={"login": "test", "password": "test"},
         )
-    assert response_register.status_code == 201
-    assert response_login.status_code == 200
-    assert response_login.json()["token"] is not None
-    decoded = jwt.decode(response_login.json()["token"], KEY, algorithms=["HS256"])
-    assert decoded["login"] == "test"
+        token = response_login.json()["token"]
+        response_create_video = await ac.post(
+            url="/create_post",
+            json={"video": "test", "description": "test"},
+        )

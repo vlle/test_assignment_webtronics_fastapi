@@ -13,7 +13,7 @@ class Robot(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     login: Mapped[str] = mapped_column(String(32), unique=True)
-    password: Mapped[str] = mapped_column(String(32))
+    password: Mapped[str] = mapped_column(String(128))
     email: Mapped[str] = mapped_column(String(50), unique=True)
     videos: Mapped[List["Video"]] = relationship("Video", backref="robot")
 
