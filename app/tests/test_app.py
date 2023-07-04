@@ -137,6 +137,17 @@ async def test_get_video(table_creation):
 
 
 @pytest.mark.asyncio
+async def test_get_not_exists_video(table_creation):
+    await table_creation
+    async with AsyncClient(app=application, base_url="http://127.0.0.1") as ac:
+        response_get_video = await ac.get(
+            url="/view_post",
+            params={"video_id": -1},
+        )
+        assert response_get_video.status_code == 404
+
+
+@pytest.mark.asyncio
 async def test_edit_video(table_creation):
     await table_creation
     async with AsyncClient(app=application, base_url="http://127.0.0.1") as ac:
@@ -171,3 +182,41 @@ async def test_edit_video(table_creation):
         )
         assert response_get_video.status_code == 200
         assert response_get_video.json()["video"]["name"] == "test2"
+
+
+@pytest.mark.asyncio
+async def test_delete_video(table_creation):
+    await table_creation
+    async with AsyncClient(app=application, base_url="http://127.0.0.1") as ac:
+        await ac.post(
+            url="/signup",
+            json={"login": "test", "password": "test", "email": "test@yahoo.com"},
+        )
+        login = await ac.get(
+            url="/login",
+            params={"login": "test", "password": "test"},
+        )
+        token = login.json()["token"]
+        response_create_video = await ac.post(
+            url="/create_post",
+            json={"name": "test", "description": "test"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        video_id = response_create_video.json()["video_id"]
+
+        response_get_video = await ac.get(
+            url="/view_post",
+            params={"video_id": video_id},
+        )
+        assert response_get_video.status_code == 200
+        response_delete_video = await ac.delete(
+            url="/delete_post",
+            params={"video_id": video_id},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response_delete_video.status_code == 200
+        response_get_video = await ac.get(
+            url="/view_post",
+            params={"video_id": video_id},
+        )
+        assert response_get_video.status_code == 404

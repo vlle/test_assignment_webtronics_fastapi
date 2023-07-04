@@ -60,6 +60,18 @@ async def update_video(
         return False
 
 
+async def delete_video(session: AsyncSession, video_id: int, author_id: int) -> int:
+    stmt = select(Video).where(and_(Video.id == video_id, Video.author == author_id))
+    async with session, session.begin():
+        result = await session.scalars(stmt)
+        video = result.one_or_none()
+        if video:
+            await session.delete(video)
+            await session.commit()
+            return True
+        return False
+
+
 async def get_all_users(session: AsyncSession):
     result = await session.execute(select(Robot))
     return [row[0].login for row in result]

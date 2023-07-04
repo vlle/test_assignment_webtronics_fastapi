@@ -1,5 +1,5 @@
 from authentication import KEY, authenticate_user, get_password_hash, has_access
-from crud import create_video, get_video, register_user, update_video
+from crud import create_video, delete_video, get_video, register_user, update_video
 from database import engine, init_models, maker
 from fastapi import Depends, FastAPI, HTTPException, status
 from jose import jwt
@@ -91,9 +91,15 @@ async def edit_post(
 
 
 # def delete_post
-@application.delete("/delete_post")
-async def delete_post():
-    return {"delete_post": "delete_post"}
+@application.delete("/delete_post", status_code=status.HTTP_200_OK)
+async def delete_post(
+    video_id: int,
+    payload: dict = Depends(has_access),
+    db: AsyncSession = Depends(db_connection),
+):
+    user_id = payload["user_id"]
+    status = await delete_video(db, video_id, user_id)
+    return {"status": "success" if status is True else "failed"}
 
 
 # def view_post
