@@ -13,8 +13,8 @@ class RobotLoginForm(BaseModel):
 
 
 class Video(BaseModel):
-    video: str = Field(..., description="Video file")
-    description: str = Field(..., description="Video description")
+    name: str
+    description: str
 
 
 class EditVideo(BaseModel):

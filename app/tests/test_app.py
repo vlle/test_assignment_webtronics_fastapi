@@ -103,5 +103,9 @@ async def test_create_video(table_creation):
         token = response_login.json()["token"]
         response_create_video = await ac.post(
             url="/create_post",
-            json={"video": "test", "description": "test"},
+            json={"name": "test", "description": "test"},
+            headers={"Authorization": f"Bearer {token}"},
         )
+    assert response_register.status_code == 201
+    assert response_login.status_code == 200
+    assert response_create_video.status_code == 201

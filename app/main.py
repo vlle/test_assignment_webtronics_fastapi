@@ -1,3 +1,5 @@
+import logging
+
 from crud import create_video, get_user_by_login, login_user, register_user
 from database import engine, init_models, maker
 from fastapi import Depends, FastAPI, HTTPException, status
@@ -117,9 +119,11 @@ async def login(login: str, password: str, db: AsyncSession = Depends(db_connect
 @application.post("/create_post", status_code=status.HTTP_201_CREATED)
 async def create_post(
     video: Video,
-    db: AsyncSession = Depends(db_connection),
     payload: dict = Depends(has_access),
+    db: AsyncSession = Depends(db_connection),
 ):
+    print(payload)
+    logging.warn(payload)
     user_id = payload["user_id"]
     await create_video(db, video, user_id)
     return {"status": "success"}
