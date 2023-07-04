@@ -16,6 +16,11 @@ services:
       - db_data:/var/lib/postgresql/data
     ports:
       - "5400:5432" # for debuging purposes
+  redis:
+    image: redis:6.2.6
+    restart: always
+    ports:
+      - "6379:6379"
 
 volumes:
   db_data:
