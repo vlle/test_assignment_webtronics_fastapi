@@ -62,11 +62,7 @@ async def update_video(
 
 
 async def like_video(session: AsyncSession, video_id: int, author_id: int) -> int:
-    stmt = (
-        select(Video)
-        .options(selectinload(Video.likes))
-        .where(and_(Video.id == video_id))
-    )
+    stmt = select(Video).options(selectinload(Video.likes)).where(Video.id == video_id)
     async with session, session.begin():
         result = await session.scalars(stmt)
         video = result.one_or_none()
@@ -79,11 +75,7 @@ async def like_video(session: AsyncSession, video_id: int, author_id: int) -> in
 
 
 async def dislike_video(session: AsyncSession, video_id: int, author_id: int) -> int:
-    stmt = (
-        select(Video)
-        .options(selectinload(Video.likes))
-        .where(and_(Video.id == video_id, Video.author == author_id))
-    )
+    stmt = select(Video).options(selectinload(Video.likes)).where(Video.id == video_id)
     async with session, session.begin():
         result = await session.scalars(stmt)
         video = result.one_or_none()

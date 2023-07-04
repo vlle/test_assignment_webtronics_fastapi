@@ -129,8 +129,7 @@ async def test_get_video(table_creation):
         )
         video_id = response_create_video.json()["video_id"]
         response_get_video = await ac.get(
-            url="/view_post",
-            params={"video_id": video_id},
+            url=f"/view_post/{video_id}",
         )
         assert response_get_video.status_code == 200
         assert response_get_video.json()["video"]["name"] == "test"
@@ -141,8 +140,7 @@ async def test_get_not_exists_video(table_creation):
     await table_creation
     async with AsyncClient(app=application, base_url="http://127.0.0.1") as ac:
         response_get_video = await ac.get(
-            url="/view_post",
-            params={"video_id": -1},
+            url="/view_post/-1",
         )
         assert response_get_video.status_code == 404
 
@@ -167,8 +165,7 @@ async def test_edit_video(table_creation):
         )
         video_id = response_create_video.json()["video_id"]
         response_edit_video = await ac.put(
-            url="/edit_post",
-            params={"video_id": video_id},
+            url=f"/edit_post/{video_id}",
             json={"name": "test2", "description": "description"},
             headers={"Authorization": f"Bearer {token}"},
         )
@@ -177,8 +174,7 @@ async def test_edit_video(table_creation):
         assert response_edit_video.json()["status"] == "success"
 
         response_get_video = await ac.get(
-            url="/view_post",
-            params={"video_id": video_id},
+            url=f"/view_post/{video_id}",
         )
         assert response_get_video.status_code == 200
         assert response_get_video.json()["video"]["name"] == "test2"
@@ -205,20 +201,15 @@ async def test_delete_video(table_creation):
         video_id = response_create_video.json()["video_id"]
 
         response_get_video = await ac.get(
-            url="/view_post",
-            params={"video_id": video_id},
+            url=f"/view_post/{video_id}",
         )
         assert response_get_video.status_code == 200
         response_delete_video = await ac.delete(
-            url="/delete_post",
-            params={"video_id": video_id},
+            url=f"/delete_post/{video_id}",
             headers={"Authorization": f"Bearer {token}"},
         )
         assert response_delete_video.status_code == 200
-        response_get_video = await ac.get(
-            url="/view_post",
-            params={"video_id": video_id},
-        )
+        response_get_video = await ac.get(url=f"/view_post/{video_id}")
         assert response_get_video.status_code == 404
 
 
@@ -256,15 +247,13 @@ async def test_like_video(table_creation):
         )
         token = login.json()["token"]
         response_like_video = await ac.post(
-            url="/like_post",
-            params={"video_id": video_id},
+            url=f"/like_post/{video_id}",
             headers={"Authorization": f"Bearer {token}"},
         )
         assert response_like_video.status_code == 200
         assert response_like_video.json()["status"] == "success"
         response_check_likes = await ac.get(
-            url="/get_likes",
-            params={"video_id": video_id},
+            url=f"/get_likes/{video_id}",
         )
         assert response_check_likes.status_code == 200
         assert len(response_check_likes.json()["likes"]) == 1
@@ -304,29 +293,25 @@ async def test_dislike_video(table_creation):
         )
         token = login.json()["token"]
         response_like_video = await ac.post(
-            url="/like_post",
-            params={"video_id": video_id},
+            url=f"/like_post/{video_id}",
             headers={"Authorization": f"Bearer {token}"},
         )
         assert response_like_video.status_code == 200
         assert response_like_video.json()["status"] == "success"
         response_check_likes = await ac.get(
-            url="/get_likes",
-            params={"video_id": video_id},
+            url=f"/get_likes/{video_id}",
         )
         assert response_check_likes.status_code == 200
         assert len(response_check_likes.json()["likes"]) == 1
 
-        response_like_video = await ac.post(
-            url="/dislike_post",
-            params={"video_id": video_id},
+        response_dislike_video = await ac.post(
+            url=f"/dislike_post/{video_id}",
             headers={"Authorization": f"Bearer {token}"},
         )
-        assert response_like_video.status_code == 200
-        assert response_like_video.json()["status"] == "success"
+        assert response_dislike_video.status_code == 200
+        assert response_dislike_video.json()["status"] == "success"
         response_check_likes = await ac.get(
-            url="/get_likes",
-            params={"video_id": video_id},
+            url=f"/get_likes/{video_id}",
         )
         assert response_check_likes.status_code == 200
         assert len(response_check_likes.json()["likes"]) == 0
@@ -352,8 +337,7 @@ async def test_is_author_can_like_own_video(table_creation):
         )
         video_id = response_create_video.json()["video_id"]
         response_like_video = await ac.post(
-            url="/like_post",
-            params={"video_id": video_id},
+            url=f"/like_post/{video_id}",
             headers={"Authorization": f"Bearer {token}"},
         )
         assert response_like_video.status_code == 400

@@ -1,3 +1,4 @@
+import redis.asyncio as redis
 from authentication import KEY, authenticate_user, get_password_hash, has_access
 from crud import (
     create_video,
@@ -16,6 +17,13 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 application = FastAPI()
+
+
+async def cache():
+    return redis.Redis(
+        host="redis",
+        decode_responses=True,
+    )
 
 
 @application.on_event("startup")
@@ -82,7 +90,7 @@ async def create_post(
     return {"status": "success", "video_id": video_id}
 
 
-@application.put("/edit_post", status_code=status.HTTP_200_OK)
+@application.put("/edit_post/{video_id}", status_code=status.HTTP_200_OK)
 async def edit_post(
     video_id: int,
     video: Video,
@@ -94,7 +102,7 @@ async def edit_post(
     return {"status": "success" if status is True else "failed"}
 
 
-@application.delete("/delete_post", status_code=status.HTTP_200_OK)
+@application.delete("/delete_post/{video_id}", status_code=status.HTTP_200_OK)
 async def delete_post(
     video_id: int,
     payload: dict = Depends(has_access),
@@ -105,7 +113,7 @@ async def delete_post(
     return {"status": "success" if status is True else "failed"}
 
 
-@application.get("/view_post")
+@application.get("/view_post/{video_id}")
 async def view_post(video_id: int, db: AsyncSession = Depends(db_connection)):
     video = await get_video(db, video_id)
     if not video:
@@ -115,10 +123,11 @@ async def view_post(video_id: int, db: AsyncSession = Depends(db_connection)):
     return {"video": Video(name=video.name, description=video.description)}
 
 
-@application.post("/like_post")
+@application.post("/like_post/{video_id}")
 async def like_post(
     video_id: int,
     payload: dict = Depends(has_access),
+    redis: redis.Redis = Depends(cache),
     db: AsyncSession = Depends(db_connection),
 ):
     user_id = payload["user_id"]
@@ -133,13 +142,19 @@ async def like_post(
             detail="You can't like your own video",
         )
     operation_status = await like_video(db, video_id, user_id)
-    return {"status": "success" if operation_status is True else "failed"}
+    if operation_status is True:
+        await redis.decr(str(video_id))
+    return {
+        "status": "success" if operation_status is True else "failed",
+        "likes": await redis.get(str(video_id)),
+    }
 
 
-@application.post("/dislike_post")
+@application.post("/dislike_post/{video_id}")
 async def dislike_post(
     video_id: int,
     payload: dict = Depends(has_access),
+    redis: redis.Redis = Depends(cache),
     db: AsyncSession = Depends(db_connection),
 ):
     user_id = payload["user_id"]
@@ -151,13 +166,18 @@ async def dislike_post(
     if video.author == user_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You can't like your own video",
+            detail="You can't dislike your own video",
         )
     operation_status = await dislike_video(db, video_id, user_id)
-    return {"status": "success" if operation_status is True else "failed"}
+    if operation_status is True:
+        await redis.incr(str(video_id))
+    return {
+        "status": "success" if operation_status is True else "failed",
+        "likes": await redis.get(str(video_id)),
+    }
 
 
-@application.get("/get_likes")
+@application.get("/get_likes/{video_id}")
 async def get_likes(video_id: int, db: AsyncSession = Depends(db_connection)):
     video = await get_video(db, video_id)
     if not video:
