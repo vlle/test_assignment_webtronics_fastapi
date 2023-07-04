@@ -17,4 +17,4 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Run tests
-        run: docker-compose -f docker-compose.test.yml up
+        run: docker-compose -f docker-compose.test.yml up & sleep 100 && docker-compose down
