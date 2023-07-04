@@ -12,6 +12,8 @@ This is a simple CRUD-like web API based on FastAPI, SQLALchemy and PostgreSQL.
 <img width="600" alt="pydocs" src="https://github.com/vlle/technical_assignemnt_webtronic_fastapi/assets/91570054/62434380-b3d2-4118-9af0-570c48b345cd">
 
 - Pytest tests.
+- <img width="600" alt="Снимок экрана 2023-07-04 в 15 38 21" src="https://github.com/vlle/technical_assignemnt_webtronic_fastapi/assets/91570054/8841dd2e-670b-40d2-82c4-c50bc9781c43">
+
 - Redis for caching
 
 ## What would I do with more time:
@@ -42,7 +44,7 @@ docker compose -f docker-compose.test.yml up --build
 ## Demonstration
 Video: [![asciicast](https://asciinema.org/a/8tLgrkS43j7n32h3KcJMtIdEy.svg)](https://asciinema.org/a/8tLgrkS43j7n32h3KcJMtIdEy)
 
-Examples of httpie requests:
+Examples of [httpie](https://httpie.io)  requests:
 ```bash
 http GET "http://127.0.0.1:8000/view_post/1"
 http PUT "http://127.0.0.1:8000/edit_post/1" name=new_name description=example_descr --auth-type bearer --auth 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJs
