@@ -143,7 +143,7 @@ async def like_post(
         )
     operation_status = await like_video(db, video_id, user_id)
     if operation_status is True:
-        await redis.decr(str(video_id))
+        await redis.incr(str(video_id))
     return {
         "status": "success" if operation_status is True else "failed",
         "likes": await redis.get(str(video_id)),
@@ -170,7 +170,7 @@ async def dislike_post(
         )
     operation_status = await dislike_video(db, video_id, user_id)
     if operation_status is True:
-        await redis.incr(str(video_id))
+        await redis.decr(str(video_id))
     return {
         "status": "success" if operation_status is True else "failed",
         "likes": await redis.get(str(video_id)),

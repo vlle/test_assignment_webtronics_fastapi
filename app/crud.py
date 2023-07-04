@@ -80,7 +80,10 @@ async def dislike_video(session: AsyncSession, video_id: int, author_id: int) ->
         result = await session.scalars(stmt)
         video = result.one_or_none()
         if video:
-            video.likes.remove(await session.get(Robot, author_id))
+            try:
+                video.likes.remove(await session.get(Robot, author_id))
+            except ValueError:
+                return False
             session.add(video)
             await session.commit()
             return True
