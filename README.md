@@ -30,14 +30,14 @@ This is a simple CRUD-like web API based on FastAPI, SQLALchemy and PostgreSQL.
 ### Run the app
 
 ```bash
-git clone
+git clone git@github.com:vlle/test_assignment_webtronics_fastapi.git
 docker-compose up
 ```
 
 ### Test the app
 
 ```bash
-git clone
+git clone git@github.com:vlle/test_assignment_webtronics_fastapi.git
 docker compose -f docker-compose.test.yml up --build
 ```
 
