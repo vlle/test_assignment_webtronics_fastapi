@@ -10,11 +10,10 @@ async def register_user(session: AsyncSession, robot_user: RobotUser):
     await session.commit()
 
 
-async def login_user(session: AsyncSession, robot_user: RobotLoginForm):
+async def login_user(session: AsyncSession, robot_user: RobotLoginForm) -> Robot | None:
     stmt = select(Robot).where(
         and_(Robot.login == robot_user.login, Robot.password == robot_user.password)
     )
-    print(2)
     async with session, session.begin():
         result = await session.scalars(stmt)
         return result.one_or_none()

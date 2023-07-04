@@ -68,28 +68,6 @@ async def test_signup_robot_already_registered(table_creation, get_session):
 
 
 @pytest.mark.asyncio
-async def test_signup_robot_already_registered_2(table_creation, get_session):
-    await table_creation
-    session = await anext(get_session)
-    assert "test" not in (await get_all_users(session))
-    async with AsyncClient(app=application, base_url="http://127.0.0.1") as ac:
-        response = await ac.post(
-            url="/signup",
-            json={"login": "test", "password": "test", "email": "test@yahoo.com"},
-        )
-    assert response.status_code == 201
-    assert response.json()["status"] == "success"
-    assert "test" in (await get_all_users(session))
-    async with AsyncClient(app=application, base_url="http://127.0.0.1") as ac:
-        response = await ac.post(
-            url="/signup",
-            json={"login": "test", "password": "test", "email": "test@yahoo.com"},
-        )
-    assert response.status_code == 400
-    await session.close()
-
-
-@pytest.mark.asyncio
 async def test_login_robot(table_creation):
     await table_creation
     async with AsyncClient(app=application, base_url="http://127.0.0.1") as ac:
@@ -103,4 +81,4 @@ async def test_login_robot(table_creation):
         )
     assert response_register.status_code == 201
     assert response_login.status_code == 200
-    assert response_login.json()["status"] == "success"
+    assert response_login.json()["token"] is not None

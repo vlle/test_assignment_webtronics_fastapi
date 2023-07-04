@@ -1,6 +1,10 @@
+import secrets
+
+import jwt
 from crud import login_user, register_user
 from database import engine, init_models, maker
 from fastapi import Depends, FastAPI, HTTPException, status
+from models import Robot
 from pydantic_models import RobotLoginForm, RobotUser
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,6 +24,9 @@ async def db_connection():
     finally:
         await db.close()
 
+
+# random 128 letter key for jwt key
+KEY = secrets.token_hex(128)
 
 # def signup
 @application.post(
@@ -50,11 +57,12 @@ async def signup(user: RobotUser, db: AsyncSession = Depends(db_connection)):
     },
 )
 async def login(login: str, password: str, db: AsyncSession = Depends(db_connection)):
-    print(1)
     user = RobotLoginForm(login=login, password=password)
-    is_there_user = await login_user(db, user)
+    is_there_user: Robot = await login_user(db, user)
     if is_there_user:
-        return {"status": "success"}
+        payload = {"user_id": is_there_user.id}
+        encoded = jwt.encode(payload=payload, key=KEY)
+        return {"token": encoded}
     else:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong login or password"
