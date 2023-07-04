@@ -60,7 +60,7 @@ async def login(login: str, password: str, db: AsyncSession = Depends(db_connect
     user = RobotLoginForm(login=login, password=password)
     is_there_user: Robot = await login_user(db, user)
     if is_there_user:
-        payload = {"user_id": is_there_user.id}
+        payload = {"user_id": is_there_user.id, "login": user.login}
         encoded = jwt.encode(payload=payload, key=KEY)
         return {"token": encoded}
     else:

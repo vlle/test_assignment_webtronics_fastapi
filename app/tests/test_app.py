@@ -1,8 +1,9 @@
+import jwt
 import pytest
 from crud import get_all_users
 from database import DATABASE_URL, MissingEnvironmentVariable
 from httpx import AsyncClient
-from main import application
+from main import KEY, application
 from models import Base
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
@@ -82,3 +83,5 @@ async def test_login_robot(table_creation):
     assert response_register.status_code == 201
     assert response_login.status_code == 200
     assert response_login.json()["token"] is not None
+    decoded = jwt.decode(response_login.json()["token"], KEY, algorithms=["HS256"])
+    assert decoded["login"] == "test"
